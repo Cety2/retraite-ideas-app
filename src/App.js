@@ -1737,7 +1737,7 @@ const YouthRetreatIdeasApp = () => {
             value={formData.name}
             onChange={(e) => setFormData({...formData, name: e.target.value})}
             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Ton prénom (optionnel)"
+            placeholder="Ton prénom"
           />
           <select
             value={formData.age}
@@ -1796,7 +1796,7 @@ const YouthRetreatIdeasApp = () => {
           onChange={(e) => setFormData({...formData, why: e.target.value})}
           rows={3}
           className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-          placeholder="Pourquoi cette activité serait géniale ? (optionnel)"
+          placeholder="Pourquoi cette activité serait géniale ?"
         />
 
         <textarea
@@ -1804,7 +1804,7 @@ const YouthRetreatIdeasApp = () => {
           onChange={(e) => setFormData({...formData, logistics: e.target.value})}
           rows={2}
           className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-          placeholder="Infos pratiques : matériel, espace, coût... (optionnel)"
+          placeholder="Infos pratiques : matériel, espace, coût..."
         />
 
         <div className="flex space-x-4">
@@ -1820,7 +1820,7 @@ const YouthRetreatIdeasApp = () => {
             disabled={submitting}
             className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3 rounded-xl font-bold hover:shadow-xl transition-all duration-300 disabled:opacity-50"
           >
-            {submitting ? '⏳ Envoi...' : '🚀 Proposer cette activité !'}
+            {submitting ? '⏳ Envoi...' : '🚀 Proposer !'}
           </button>
         </div>
       </div>
@@ -1963,7 +1963,7 @@ const YouthRetreatIdeasApp = () => {
             value={formData.name}
             onChange={(e) => setFormData({...formData, name: e.target.value})}
             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            placeholder="Ton prénom (optionnel)"
+            placeholder="Ton prénom"
           />
           <select
             value={formData.type}
