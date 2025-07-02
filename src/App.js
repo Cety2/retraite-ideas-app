@@ -529,7 +529,7 @@ const YouthRetreatIdeasApp = () => {
 
           </h1>
           <p className="text-xl mb-6 opacity-90">
-            Participons à façonner Une retraite divine et partageons nos idée !
+            Participons à façonner Une retraite divine et partageons nos idées !
           </p>
           <div className="bg-white/20 rounded-xl p-4 backdrop-blur-sm">
             <div className="flex items-center space-x-2 mb-2">
