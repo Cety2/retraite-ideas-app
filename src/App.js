@@ -223,6 +223,7 @@ const YouthRetreatIdeasApp = () => {
     inspired: 0
   });
   const [uploadedVideo, setUploadedVideo] = useState(null);
+  const [meditationResponses, setMeditationResponses] = useState([]);
 
   // Catégories
   const categories = [
@@ -291,6 +292,18 @@ const YouthRetreatIdeasApp = () => {
     }
   };
 
+  const fetchMeditationResponses = async () => {
+    try {
+      const { data, error } = await supabase.from('meditation_responses').select('*');
+      if (error) throw new Error(error);
+      
+      console.log('Réponses méditation chargées:', data);
+      setMeditationResponses(data || []);
+    } catch (error) {
+      console.error('Erreur chargement réponses méditation:', error);
+    }
+  };
+
   // Initialiser l'entrée vidéo si elle n'existe pas
   const initVideoEntry = async () => {
     try {
@@ -316,6 +329,7 @@ const YouthRetreatIdeasApp = () => {
     fetchIdeas();
     fetchMemories();
     fetchMoods();
+    fetchMeditationResponses();
     initVideoEntry();
   }, []);
 
@@ -352,6 +366,19 @@ const YouthRetreatIdeasApp = () => {
     } catch (error) {
       console.error('Erreur like:', error);
       alert('Erreur lors du like: ' + error.message);
+    }
+  };
+
+  const handleDeleteMeditationResponse = async (responseId) => {
+    try {
+      const { error } = await supabase.from('meditation_responses').delete().eq('id', responseId);
+      if (error) throw new Error(error);
+      
+      setMeditationResponses(prev => prev.filter(r => r.id !== responseId));
+      alert('✅ Livret de méditation supprimé !');
+    } catch (error) {
+      console.error('Erreur suppression réponse méditation:', error);
+      alert('Erreur lors de la suppression: ' + error.message);
     }
   };
 
@@ -471,6 +498,7 @@ const YouthRetreatIdeasApp = () => {
               { id: 'home', icon: Home, label: 'Accueil' },
               { id: 'explore', icon: Search, label: 'Explorer' },
               { id: 'memories', icon: Camera, label: 'Souvenirs' },
+              { id: 'meditation', icon: FileText, label: 'Méditation' },
               { id: 'teaser', icon: Video, label: 'Teaser Vidéo' },
               ...(isAdmin ? [{ id: 'admin', icon: Settings, label: 'Administration' }] : [])
             ].map(({ id, icon: Icon, label }) => (
@@ -930,6 +958,354 @@ const YouthRetreatIdeasApp = () => {
     </div>
   );
 
+  // Page de méditation avec le livret
+  const MeditationPage = () => {
+    const [formData, setFormData] = useState({
+      name: '',
+      age: '',
+      // Section 1: Ma marche avec Dieu
+      relation_with_god: '',
+      prayer_life: '',
+      god_presence: '',
+      spiritual_growth: '',
+      faith_discoveries: '',
+      spiritual_victories: '',
+      spiritual_struggles: '',
+      doubt_periods: '',
+      spiritual_obstacles: '',
+      nourishing_disciplines: '',
+      disciplines_to_develop: '',
+      
+      // Section 2: Ma vie quotidienne  
+      work_studies_blessings: '',
+      family_blessings: '',
+      friendships_blessings: '',
+      health_blessings: '',
+      personal_projects_blessings: '',
+      main_challenges: '',
+      difficulty_management: '',
+      help_in_difficulties: '',
+      god_in_decisions: '',
+      god_in_decisions_examples: '',
+      god_in_decisions_obstacles: '',
+      domains_to_consult_god: '',
+      
+      // Section 3: Mon état intérieur
+      heart_burdens: '',
+      discouragements: '',
+      unhealed_wounds: '',
+      what_brings_life: '',
+      gratitude: '',
+      sources_of_joy: '',
+      passions_motivations: '',
+      current_needs: '',
+      main_aspirations: '',
+      
+      // Section 4: Projections et engagements
+      worries_to_confide: '',
+      burdens_to_abandon: '',
+      dreams_and_projects: '',
+      domains_to_reorient: '',
+      things_to_change: '',
+      concrete_engagements_prayer: '',
+      concrete_engagements_bible: '',
+      concrete_engagements_relations: '',
+      concrete_engagements_community: '',
+      concrete_engagements_personal: '',
+      vision_coming_months: '',
+      spiritual_objectives: '',
+      person_to_become: '',
+      personal_notes: ''
+    });
+    
+    const [currentSection, setCurrentSection] = useState(0);
+    const [submitting, setSubmitting] = useState(false);
+
+    const sections = [
+      {
+        title: "🙏 Ma marche avec Dieu",
+        subtitle: "Relation spirituelle actuelle",
+        questions: [
+          { key: 'relation_with_god', label: 'Où en suis-je dans ma relation avec Dieu aujourd\'hui ?', type: 'textarea' },
+          { key: 'prayer_life', label: 'Comment décrirais-je ma vie de prière ces derniers mois ?', type: 'textarea' },
+          { key: 'god_presence', label: 'Quand ai-je ressenti la présence de Dieu de manière particulière récemment ?', type: 'textarea' },
+          { key: 'spiritual_growth', label: 'Moments de croissance spirituelle :', type: 'textarea' },
+          { key: 'faith_discoveries', label: 'Découvertes dans ma foi :', type: 'textarea' },
+          { key: 'spiritual_victories', label: 'Victoires spirituelles :', type: 'textarea' },
+          { key: 'spiritual_struggles', label: 'Où ai-je ressenti un éloignement ou des luttes spirituelles ?', type: 'textarea' },
+          { key: 'nourishing_disciplines', label: 'Quelles disciplines spirituelles me nourrissent le plus ? (prière, lecture biblique, jeûne, méditation, louange...)', type: 'textarea' },
+          { key: 'disciplines_to_develop', label: 'Lesquelles aimerais-je développer ou reprendre ?', type: 'textarea' }
+        ]
+      },
+      {
+        title: "🌱 Ma vie quotidienne",
+        subtitle: "Bénédictions et défis",
+        questions: [
+          { key: 'work_studies_blessings', label: 'Bénédictions reçues dans mes études/mon travail :', type: 'textarea' },
+          { key: 'family_blessings', label: 'Bénédictions reçues dans ma famille :', type: 'textarea' },
+          { key: 'friendships_blessings', label: 'Bénédictions reçues dans mes relations amicales :', type: 'textarea' },
+          { key: 'health_blessings', label: 'Bénédictions reçues pour ma santé :', type: 'textarea' },
+          { key: 'personal_projects_blessings', label: 'Bénédictions reçues dans mes projets personnels :', type: 'textarea' },
+          { key: 'main_challenges', label: 'Quels ont été mes principaux défis cette année ?', type: 'textarea' },
+          { key: 'difficulty_management', label: 'Comment ai-je géré les difficultés ?', type: 'textarea' },
+          { key: 'help_in_difficulties', label: 'Qu\'est-ce qui m\'a aidé à traverser les moments difficiles ?', type: 'textarea' },
+          { key: 'god_in_decisions_examples', label: 'Ai-je impliqué Dieu dans mes décisions quotidiennes ? Si oui, comment ? Donnez des exemples concrets', type: 'textarea' },
+          { key: 'god_in_decisions_obstacles', label: 'Si non, qu\'est-ce qui m\'en a empêché ?', type: 'textarea' },
+          { key: 'domains_to_consult_god', label: 'Dans quels domaines aimerais-je davantage consulter Dieu ?', type: 'textarea' }
+        ]
+      },
+      {
+        title: "💭 Mon état intérieur",
+        subtitle: "Ce qui me pèse et ce qui me vivifie",
+        questions: [
+          { key: 'heart_burdens', label: 'Qu\'est-ce qui me pèse sur le cœur ?', type: 'textarea' },
+          { key: 'discouragements', label: 'Qu\'est-ce qui me décourage ou me préoccupe ?', type: 'textarea' },
+          { key: 'unhealed_wounds', label: 'Y a-t-il des blessures non guéries que je porte ?', type: 'textarea' },
+          { key: 'what_brings_life', label: 'Qu\'est-ce qui me rend vivant(e) et joyeux(se) ?', type: 'textarea' },
+          { key: 'gratitude', label: 'Pour quoi suis-je particulièrement reconnaissant(e) ?', type: 'textarea' },
+          { key: 'sources_of_joy', label: 'Quelles sont mes sources de joie et d\'espoir ?', type: 'textarea' },
+          { key: 'passions_motivations', label: 'Qu\'est-ce qui me passionne et me motive ?', type: 'textarea' },
+          { key: 'current_needs', label: 'De quoi ai-je le plus besoin dans ma vie en ce moment ?', type: 'textarea' },
+          { key: 'main_aspirations', label: 'Quelles sont mes principales aspirations ?', type: 'textarea' }
+        ]
+      },
+      {
+        title: "🎯 Projections et engagements",
+        subtitle: "Vers l'avenir avec Dieu",
+        questions: [
+          { key: 'worries_to_confide', label: 'Quelles inquiétudes veux-je confier à Dieu ?', type: 'textarea' },
+          { key: 'burdens_to_abandon', label: 'Quels fardeaux dois-je abandonner ?', type: 'textarea' },
+          { key: 'dreams_and_projects', label: 'Quels rêves et projets veux-je placer entre ses mains ?', type: 'textarea' },
+          { key: 'things_to_change', label: 'Qu\'est-ce que je dois laisser tomber ou changer ?', type: 'textarea' },
+          { key: 'concrete_engagements_prayer', label: 'Engagements concrets pour ma vie de prière :', type: 'textarea' },
+          { key: 'concrete_engagements_bible', label: 'Engagements concrets pour ma lecture biblique et méditation :', type: 'textarea' },
+          { key: 'concrete_engagements_relations', label: 'Engagements concrets pour mes relations (famille, communauté, amis...) :', type: 'textarea' },
+          { key: 'concrete_engagements_community', label: 'Engagements concrets pour les activités de la communauté :', type: 'textarea' },
+          { key: 'concrete_engagements_personal', label: 'Engagements concrets pour ma croissance personnelle (formation, discipline, santé...) :', type: 'textarea' },
+          { key: 'vision_coming_months', label: 'Comment vois-je les prochains mois ?', type: 'textarea' },
+          { key: 'spiritual_objectives', label: 'Quels sont mes objectifs spirituels ?', type: 'textarea' },
+          { key: 'person_to_become', label: 'Quelle personne veux-je devenir ?', type: 'textarea' },
+          { key: 'personal_notes', label: 'Notes personnelles (réflexions, prières, engagements importants) :', type: 'textarea' }
+        ]
+      }
+    ];
+
+    const handleInputChange = (key, value) => {
+      setFormData(prev => ({ ...prev, [key]: value }));
+    };
+
+    const handleSubmit = async () => {
+      if (!formData.name || !formData.age) {
+        alert('Merci de renseigner votre nom et âge ! 😊');
+        return;
+      }
+      
+      setSubmitting(true);
+      try {
+        const response = {
+          ...formData,
+          submitted_at: new Date().toISOString()
+        };
+        
+        console.log('Envoi réponse méditation:', response);
+        const { error } = await supabase.from('meditation_responses').insert([response]);
+        if (error) throw new Error(error);
+        
+        await fetchMeditationResponses();
+        alert('🙏 Votre livret de méditation a été envoyé ! Merci pour ce partage sincère 💫');
+        
+        // Reset form
+        setFormData({
+          name: '', age: '', relation_with_god: '', prayer_life: '', god_presence: '', 
+          spiritual_growth: '', faith_discoveries: '', spiritual_victories: '', 
+          spiritual_struggles: '', doubt_periods: '', spiritual_obstacles: '', 
+          nourishing_disciplines: '', disciplines_to_develop: '', work_studies_blessings: '', 
+          family_blessings: '', friendships_blessings: '', health_blessings: '', 
+          personal_projects_blessings: '', main_challenges: '', difficulty_management: '', 
+          help_in_difficulties: '', god_in_decisions: '', god_in_decisions_examples: '', 
+          god_in_decisions_obstacles: '', domains_to_consult_god: '', heart_burdens: '', 
+          discouragements: '', unhealed_wounds: '', what_brings_life: '', gratitude: '', 
+          sources_of_joy: '', passions_motivations: '', current_needs: '', main_aspirations: '', 
+          worries_to_confide: '', burdens_to_abandon: '', dreams_and_projects: '', 
+          domains_to_reorient: '', things_to_change: '', concrete_engagements_prayer: '', 
+          concrete_engagements_bible: '', concrete_engagements_relations: '', 
+          concrete_engagements_community: '', concrete_engagements_personal: '', 
+          vision_coming_months: '', spiritual_objectives: '', person_to_become: '', 
+          personal_notes: ''
+        });
+        setCurrentSection(0);
+      } catch (error) {
+        console.error('Erreur envoi méditation:', error);
+        alert('Erreur lors de l\'envoi: ' + error.message);
+      } finally {
+        setSubmitting(false);
+      }
+    };
+
+    const nextSection = () => {
+      if (currentSection < sections.length - 1) {
+        setCurrentSection(currentSection + 1);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+
+    const prevSection = () => {
+      if (currentSection > 0) {
+        setCurrentSection(currentSection - 1);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+
+    const currentSectionData = sections[currentSection];
+    const progress = ((currentSection + 1) / sections.length) * 100;
+
+    return (
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* En-tête */}
+        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-3xl p-8 text-white relative overflow-hidden">
+          <div className="absolute inset-0 bg-black/20"></div>
+          <div className="relative z-10 text-center">
+            <h1 className="text-4xl md:text-6xl font-bold mb-4">📖 Livret de Méditation</h1>
+            <p className="text-xl mb-2 opacity-90">La pause : Faire le point pour mieux avancer</p>
+            <p className="text-sm opacity-80 italic">2 Corinthiens 13:5 - "Examinez-vous vous-mêmes, pour voir si vous êtes dans la foi. Éprouvez-vous vous-mêmes..."</p>
+          </div>
+        </div>
+
+        {/* Informations personnelles */}
+        {currentSection === 0 && (
+          <div className="bg-white rounded-2xl p-8 shadow-lg">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">✨ Informations personnelles</h2>
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="Votre prénom"
+              />
+              <select
+                value={formData.age}
+                onChange={(e) => handleInputChange('age', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="">Choisissez votre âge</option>
+                <option value="13-15">13-15 ans</option>
+                <option value="16-18">16-18 ans</option>
+                <option value="19-25">19-25 ans</option>
+                <option value="26+">26+ ans</option>
+              </select>
+            </div>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+              <h3 className="font-semibold text-blue-800 mb-3">📝 Instructions</h3>
+              <div className="text-blue-700 space-y-2 text-sm">
+                <p>• Prenez le temps nécessaire pour chaque question</p>
+                <p>• Répondez en toute honnêteté, sans jugement envers vous-même</p>
+                <p>• Certaines questions peuvent nécessiter plusieurs jours de réflexion</p>
+                <p>• Vous pouvez sauvegarder et revenir plus tard si besoin</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Barre de progression */}
+        <div className="bg-white rounded-2xl p-6 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">
+              Section {currentSection + 1}/{sections.length}: {currentSectionData.title}
+            </h3>
+            <span className="text-sm text-gray-600">{Math.round(progress)}% complété</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {/* Questions de la section courante */}
+        <div className="bg-white rounded-2xl p-8 shadow-lg">
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold mb-2 text-gray-800">{currentSectionData.title}</h2>
+            <p className="text-gray-600 text-lg">{currentSectionData.subtitle}</p>
+          </div>
+
+          <div className="space-y-8">
+            {currentSectionData.questions.map((question, index) => (
+              <div key={question.key} className="space-y-3">
+                <label className="block text-sm font-semibold text-gray-700">
+                  {index + 1}. {question.label}
+                </label>
+                {question.type === 'textarea' ? (
+                  <textarea
+                    value={formData[question.key] || ''}
+                    onChange={(e) => handleInputChange(question.key, e.target.value)}
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                    placeholder="Prenez le temps de réfléchir et partagez vos pensées..."
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={formData[question.key] || ''}
+                    onChange={(e) => handleInputChange(question.key, e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Votre réponse..."
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Boutons de navigation */}
+        <div className="bg-white rounded-2xl p-6 shadow-lg">
+          <div className="flex justify-between items-center">
+            <button
+              onClick={prevSection}
+              disabled={currentSection === 0}
+              className="px-6 py-3 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ← Section précédente
+            </button>
+
+            {currentSection === sections.length - 1 ? (
+              <button
+                onClick={handleSubmit}
+                disabled={submitting || !formData.name || !formData.age}
+                className="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+              >
+                {submitting ? '⏳ Envoi...' : '🙏 Terminer et envoyer'}
+              </button>
+            ) : (
+              <button
+                onClick={nextSection}
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-300"
+              >
+                Section suivante →
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Citation de fin */}
+        {currentSection === sections.length - 1 && (
+          <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl p-8 text-center">
+            <div className="text-4xl mb-4">🙏</div>
+            <p className="text-gray-700 italic mb-4">
+              "Seigneur, merci pour ce temps de pause et de réflexion. Tu connais mon cœur mieux que moi-même. 
+              Je te confie mes joies et mes défis, mes réussites et mes échecs, mes rêves et mes craintes."
+            </p>
+            <p className="text-gray-600 text-sm">
+              Prenez un moment pour prier avant d'envoyer vos réflexions.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Page teaser
   const TeaserPage = () => (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -1066,11 +1442,13 @@ const YouthRetreatIdeasApp = () => {
         const { data: ideasData } = await supabase.from('ideas').select('*');
         const { data: memoriesData } = await supabase.from('memories').select('*');
         const { data: moodsData } = await supabase.from('moods').select('*');
+        const { data: meditationData } = await supabase.from('meditation_responses').select('*');
         
         const exportData = {
           ideas: ideasData || [],
           memories: memoriesData || [],
           moods: moodsData || [],
+          meditation_responses: meditationData || [],
           exportDate: new Date().toISOString()
         };
         
@@ -1092,6 +1470,7 @@ const YouthRetreatIdeasApp = () => {
         try {
           await supabase.from('ideas').neq('id', 0).delete();
           await supabase.from('memories').neq('id', 0).delete();
+          await supabase.from('meditation_responses').neq('id', 0).delete();
           
           const defaultIdeas = [
             {
@@ -1118,6 +1497,7 @@ const YouthRetreatIdeasApp = () => {
           
           await fetchIdeas();
           await fetchMemories();
+          await fetchMeditationResponses();
           
           // Supprimer la vidéo teaser mais garder l'entrée
           await supabase.from('moods').update({ video_url: null }).eq('mood_type', 'video_teaser');
@@ -1139,6 +1519,7 @@ const YouthRetreatIdeasApp = () => {
           // Supprimer les données des tables
           await supabase.from('ideas').neq('id', 0).delete();
           await supabase.from('memories').neq('id', 0).delete();
+          await supabase.from('meditation_responses').neq('id', 0).delete();
           await supabase.from('moods').update({ count: 0 }).neq('id', 0);
           
           // Nettoyer les images et vidéos du storage
@@ -1180,6 +1561,7 @@ const YouthRetreatIdeasApp = () => {
           await fetchIdeas();
           await fetchMemories();
           await fetchMoods();
+          await fetchMeditationResponses();
           
           setUploadedVideo(null);
           alert('🗑️ Toutes les données ont été supprimées !');
@@ -1195,6 +1577,7 @@ const YouthRetreatIdeasApp = () => {
       { id: 'video', label: 'Gestion Vidéo', icon: Video },
       { id: 'memories', label: 'Souvenirs', icon: Camera },
       { id: 'ideas', label: 'Idées d\'activités', icon: Lightbulb },
+      { id: 'meditation', label: 'Livrets de Méditation', icon: FileText },
       { id: 'data', label: 'Données & Exports', icon: Download }
     ];
 
@@ -1222,6 +1605,15 @@ const YouthRetreatIdeasApp = () => {
                   <p className="text-purple-200 text-sm">Moments partagés</p>
                 </div>
 
+                <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-6 text-white">
+                  <div className="flex items-center justify-between mb-4">
+                    <FileText className="w-8 h-8" />
+                    <span className="text-2xl font-bold">{meditationResponses.length}</span>
+                  </div>
+                  <h3 className="font-semibold text-indigo-100">Livrets Méditation</h3>
+                  <p className="text-indigo-200 text-sm">Réflexions reçues</p>
+                </div>
+
                 <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white">
                   <div className="flex items-center justify-between mb-4">
                     <Video className="w-8 h-8" />
@@ -1229,15 +1621,6 @@ const YouthRetreatIdeasApp = () => {
                   </div>
                   <h3 className="font-semibold text-green-100">Teaser Vidéo</h3>
                   <p className="text-green-200 text-sm">{uploadedVideo ? 'Active' : 'Non configurée'}</p>
-                </div>
-
-                <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white">
-                  <div className="flex items-center justify-between mb-4">
-                    <Heart className="w-8 h-8" />
-                    <span className="text-2xl font-bold">{ideas.reduce((sum, idea) => sum + (idea.likes || 0), 0)}</span>
-                  </div>
-                  <h3 className="font-semibold text-orange-100">Total Likes</h3>
-                  <p className="text-orange-200 text-sm">Engagement communauté</p>
                 </div>
               </div>
 
@@ -1533,6 +1916,215 @@ const YouthRetreatIdeasApp = () => {
             </div>
           );
 
+        case 'meditation':
+          return (
+            <div className="space-y-8">
+              <div className="bg-white rounded-2xl p-8 shadow-lg">
+                <h2 className="text-2xl font-bold mb-6 flex items-center">
+                  <FileText className="w-6 h-6 mr-3 text-purple-600" />
+                  Livrets de Méditation Reçus
+                </h2>
+                
+                <div className="grid md:grid-cols-3 gap-6 mb-8">
+                  <div className="bg-purple-50 border border-purple-200 rounded-xl p-6">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="w-4 h-4 bg-purple-500 rounded-full"></div>
+                      <span className="text-purple-800 font-semibold">Total Livrets</span>
+                    </div>
+                    <p className="text-3xl font-bold text-purple-600">{meditationResponses.length}</p>
+                    <p className="text-purple-700 text-sm">livrets reçus</p>
+                  </div>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <User className="w-4 h-4 text-blue-600" />
+                      <span className="text-blue-800 font-semibold">Participants</span>
+                    </div>
+                    <p className="text-3xl font-bold text-blue-600">{new Set(meditationResponses.map(r => r.name)).size}</p>
+                    <p className="text-blue-700 text-sm">jeunes uniques</p>
+                  </div>
+
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <Calendar className="w-4 h-4 text-green-600" />
+                      <span className="text-green-800 font-semibold">Récents</span>
+                    </div>
+                    <p className="text-3xl font-bold text-green-600">
+                      {meditationResponses.filter(r => {
+                        const submittedDate = new Date(r.submitted_at);
+                        const today = new Date();
+                        const diffTime = Math.abs(today - submittedDate);
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        return diffDays <= 7;
+                      }).length}
+                    </p>
+                    <p className="text-green-700 text-sm">cette semaine</p>
+                  </div>
+                </div>
+
+                {meditationResponses.length === 0 ? (
+                  <div className="text-center py-12 bg-gray-50 rounded-xl">
+                    <FileText className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                    <h3 className="text-xl font-semibold text-gray-600 mb-2">Aucun livret reçu</h3>
+                    <p className="text-gray-500">Les livrets de méditation apparaîtront ici une fois complétés par les jeunes</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">📋 Livrets par participant</h3>
+                    
+                    {meditationResponses.map((response, index) => (
+                      <div key={index} className="border border-gray-200 rounded-xl overflow-hidden">
+                        <div 
+                          className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 cursor-pointer hover:from-purple-100 hover:to-pink-100 transition-colors"
+                          onClick={() => {
+                            const content = document.getElementById(`response-${index}`);
+                            content.style.display = content.style.display === 'none' ? 'block' : 'none';
+                          }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="text-lg font-bold text-gray-800 mb-1">
+                                🙏 {response.name || 'Anonyme'}
+                              </h4>
+                              <div className="flex items-center space-x-4 text-sm text-gray-600">
+                                <span>👤 {response.age || 'Âge non renseigné'}</span>
+                                <span>📅 {response.submitted_at ? new Date(response.submitted_at).toLocaleDateString('fr-FR') : 'Date inconnue'}</span>
+                              </div>
+                            </div>
+                            <div className="text-gray-400">
+                              <span className="text-sm">Cliquez pour voir les réponses</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div id={`response-${index}`} style={{ display: 'none' }} className="p-6 bg-white border-t border-gray-100">
+                          <div className="grid md:grid-cols-2 gap-6">
+                            {/* Section 1: Ma marche avec Dieu */}
+                            <div className="space-y-6">
+                              <h5 className="text-lg font-semibold text-purple-700 border-b border-purple-200 pb-2">
+                                🙏 Ma marche avec Dieu
+                              </h5>
+                              
+                              {[
+                                { key: 'relation_with_god', label: 'Relation avec Dieu' },
+                                { key: 'prayer_life', label: 'Vie de prière' },
+                                { key: 'god_presence', label: 'Présence de Dieu ressentie' },
+                                { key: 'spiritual_growth', label: 'Croissance spirituelle' },
+                                { key: 'spiritual_victories', label: 'Victoires spirituelles' },
+                                { key: 'spiritual_struggles', label: 'Luttes spirituelles' },
+                                { key: 'nourishing_disciplines', label: 'Disciplines nourrissantes' },
+                                { key: 'disciplines_to_develop', label: 'Disciplines à développer' }
+                              ].map(field => (
+                                response[field.key] && (
+                                  <div key={field.key} className="bg-purple-50 rounded-lg p-4">
+                                    <h6 className="font-semibold text-purple-800 text-sm mb-2">{field.label}</h6>
+                                    <p className="text-gray-700 text-sm">{response[field.key]}</p>
+                                  </div>
+                                )
+                              ))}
+                            </div>
+                            
+                            {/* Section 2: Ma vie quotidienne */}
+                            <div className="space-y-6">
+                              <h5 className="text-lg font-semibold text-blue-700 border-b border-blue-200 pb-2">
+                                🌱 Ma vie quotidienne
+                              </h5>
+                              
+                              {[
+                                { key: 'work_studies_blessings', label: 'Bénédictions travail/études' },
+                                { key: 'family_blessings', label: 'Bénédictions famille' },
+                                { key: 'main_challenges', label: 'Principaux défis' },
+                                { key: 'difficulty_management', label: 'Gestion des difficultés' },
+                                { key: 'god_in_decisions_examples', label: 'Dieu dans les décisions' },
+                                { key: 'domains_to_consult_god', label: 'Domaines à consulter Dieu' }
+                              ].map(field => (
+                                response[field.key] && (
+                                  <div key={field.key} className="bg-blue-50 rounded-lg p-4">
+                                    <h6 className="font-semibold text-blue-800 text-sm mb-2">{field.label}</h6>
+                                    <p className="text-gray-700 text-sm">{response[field.key]}</p>
+                                  </div>
+                                )
+                              ))}
+                            </div>
+                            
+                            {/* Section 3: État intérieur */}
+                            <div className="space-y-6">
+                              <h5 className="text-lg font-semibold text-green-700 border-b border-green-200 pb-2">
+                                💭 Mon état intérieur
+                              </h5>
+                              
+                              {[
+                                { key: 'heart_burdens', label: 'Ce qui pèse sur le cœur' },
+                                { key: 'what_brings_life', label: 'Ce qui apporte la vie' },
+                                { key: 'gratitude', label: 'Reconnaissances' },
+                                { key: 'sources_of_joy', label: 'Sources de joie' },
+                                { key: 'passions_motivations', label: 'Passions et motivations' },
+                                { key: 'current_needs', label: 'Besoins actuels' }
+                              ].map(field => (
+                                response[field.key] && (
+                                  <div key={field.key} className="bg-green-50 rounded-lg p-4">
+                                    <h6 className="font-semibold text-green-800 text-sm mb-2">{field.label}</h6>
+                                    <p className="text-gray-700 text-sm">{response[field.key]}</p>
+                                  </div>
+                                )
+                              ))}
+                            </div>
+                            
+                            {/* Section 4: Projections et engagements */}
+                            <div className="space-y-6">
+                              <h5 className="text-lg font-semibold text-orange-700 border-b border-orange-200 pb-2">
+                                🎯 Projections et engagements
+                              </h5>
+                              
+                              {[
+                                { key: 'worries_to_confide', label: 'Inquiétudes à confier' },
+                                { key: 'dreams_and_projects', label: 'Rêves et projets' },
+                                { key: 'concrete_engagements_prayer', label: 'Engagements prière' },
+                                { key: 'concrete_engagements_bible', label: 'Engagements lecture biblique' },
+                                { key: 'vision_coming_months', label: 'Vision prochains mois' },
+                                { key: 'spiritual_objectives', label: 'Objectifs spirituels' },
+                                { key: 'person_to_become', label: 'Personne à devenir' }
+                              ].map(field => (
+                                response[field.key] && (
+                                  <div key={field.key} className="bg-orange-50 rounded-lg p-4">
+                                    <h6 className="font-semibold text-orange-800 text-sm mb-2">{field.label}</h6>
+                                    <p className="text-gray-700 text-sm">{response[field.key]}</p>
+                                  </div>
+                                )
+                              ))}
+                              
+                              {response.personal_notes && (
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                  <h6 className="font-semibold text-gray-800 text-sm mb-2">📝 Notes personnelles</h6>
+                                  <p className="text-gray-700 text-sm">{response.personal_notes}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="mt-6 pt-6 border-t border-gray-200 flex justify-end">
+                            <button
+                              onClick={() => {
+                                if (window.confirm('🗑️ Supprimer ce livret de méditation ?')) {
+                                  // Fonction pour supprimer la réponse
+                                  handleDeleteMeditationResponse(response.id);
+                                }
+                              }}
+                              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              <span>Supprimer</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+
         case 'data':
           return (
             <div className="space-y-8">
@@ -1554,6 +2146,7 @@ const YouthRetreatIdeasApp = () => {
                     <div className="space-y-2 text-sm text-green-600">
                       <div>• {ideas.length} idée(s) d'activité</div>
                       <div>• {memories.length} souvenir(s) partagé(s)</div>
+                      <div>• {meditationResponses.length} livret(s) de méditation</div>
                       <div>• {memories.filter(m => m.image_url).length} image(s) stockée(s)</div>
                       <div>• {uploadedVideo ? '1 vidéo teaser' : 'Aucune vidéo teaser'}</div>
                     </div>
@@ -1629,6 +2222,7 @@ const YouthRetreatIdeasApp = () => {
                             <div>• Images : bucket 'images' dans dossier 'memories/'</div>
                             <div>• Vidéos : bucket 'images' dans dossier 'videos/'</div>
                             <div>• URLs sauvegardées en base de données</div>
+                            <div>• Livrets de méditation : table 'meditation_responses'</div>
                           </div>
                         </div>
                       </div>
@@ -2255,6 +2849,7 @@ const YouthRetreatIdeasApp = () => {
           { id: 'home', icon: Home, label: 'Accueil' },
           { id: 'explore', icon: Search, label: 'Explorer' },
           { id: 'memories', icon: Camera, label: 'Souvenirs' },
+          { id: 'meditation', icon: FileText, label: 'Méditation' },
           { id: 'teaser', icon: Video, label: 'Teaser' },
           ...(isAdmin ? [{ id: 'admin', icon: Settings, label: 'Admin' }] : [])
         ].map(({ id, icon: Icon, label }) => (
@@ -2279,6 +2874,7 @@ const YouthRetreatIdeasApp = () => {
       case 'home': return <HomePage />;
       case 'explore': return <ExplorePage />;
       case 'memories': return <MemoriesPage />;
+      case 'meditation': return <MeditationPage />;
       case 'teaser': return <TeaserPage />;
       case 'admin': return isAdmin ? <AdminPage /> : <HomePage />;
       default: return <HomePage />;
