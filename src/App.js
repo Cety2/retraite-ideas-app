@@ -1432,6 +1432,104 @@ const YouthRetreatIdeasApp = () => {
       }
     };
 
+    const exportMeditationToExcel = async () => {
+      try {
+        // Importer la bibliothèque XLSX
+        const XLSX = await import('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+        
+        if (meditationResponses.length === 0) {
+          alert('Aucune réponse de méditation à exporter !');
+          return;
+        }
+
+        // Préparer les données pour Excel avec des en-têtes clairs
+        const excelData = meditationResponses.map(response => {
+          return {
+            // Informations générales
+            'Nom': response.name || '',
+            'Âge': response.age || '',
+            'Date de soumission': response.submitted_at ? new Date(response.submitted_at).toLocaleDateString('fr-FR') : '',
+            
+            // Section 1: Ma marche avec Dieu
+            'Relation avec Dieu': response.relation_with_god || '',
+            'Vie de prière': response.prayer_life || '',
+            'Présence de Dieu ressentie': response.god_presence || '',
+            'Moments de croissance spirituelle': response.spiritual_growth || '',
+            'Découvertes dans la foi': response.faith_discoveries || '',
+            'Victoires spirituelles': response.spiritual_victories || '',
+            'Luttes spirituelles': response.spiritual_struggles || '',
+            'Disciplines spirituelles nourrissantes': response.nourishing_disciplines || '',
+            'Disciplines à développer': response.disciplines_to_develop || '',
+            
+            // Section 2: Ma vie quotidienne
+            'Bénédictions travail/études': response.work_studies_blessings || '',
+            'Bénédictions famille': response.family_blessings || '',
+            'Bénédictions amitiés': response.friendships_blessings || '',
+            'Bénédictions santé': response.health_blessings || '',
+            'Bénédictions projets personnels': response.personal_projects_blessings || '',
+            'Principaux défis': response.main_challenges || '',
+            'Gestion des difficultés': response.difficulty_management || '',
+            'Aide dans les difficultés': response.help_in_difficulties || '',
+            'Dieu dans les décisions (exemples)': response.god_in_decisions_examples || '',
+            'Obstacles à impliquer Dieu': response.god_in_decisions_obstacles || '',
+            'Domaines à consulter Dieu': response.domains_to_consult_god || '',
+            
+            // Section 3: Mon état intérieur
+            'Ce qui pèse sur le cœur': response.heart_burdens || '',
+            'Découragements/préoccupations': response.discouragements || '',
+            'Blessures non guéries': response.unhealed_wounds || '',
+            'Ce qui apporte la vie': response.what_brings_life || '',
+            'Reconnaissances': response.gratitude || '',
+            'Sources de joie et espoir': response.sources_of_joy || '',
+            'Passions et motivations': response.passions_motivations || '',
+            'Besoins actuels': response.current_needs || '',
+            'Principales aspirations': response.main_aspirations || '',
+            
+            // Section 4: Projections et engagements
+            'Inquiétudes à confier à Dieu': response.worries_to_confide || '',
+            'Fardeaux à abandonner': response.burdens_to_abandon || '',
+            'Rêves et projets': response.dreams_and_projects || '',
+            'Choses à changer': response.things_to_change || '',
+            'Engagements - vie de prière': response.concrete_engagements_prayer || '',
+            'Engagements - lecture biblique': response.concrete_engagements_bible || '',
+            'Engagements - relations': response.concrete_engagements_relations || '',
+            'Engagements - communauté': response.concrete_engagements_community || '',
+            'Engagements - croissance personnelle': response.concrete_engagements_personal || '',
+            'Vision prochains mois': response.vision_coming_months || '',
+            'Objectifs spirituels': response.spiritual_objectives || '',
+            'Personne à devenir': response.person_to_become || '',
+            'Notes personnelles': response.personal_notes || ''
+          };
+        });
+
+        // Créer le classeur Excel
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(excelData);
+
+        // Ajuster la largeur des colonnes
+        const colWidths = [];
+        Object.keys(excelData[0] || {}).forEach(() => {
+          colWidths.push({ width: 30 });
+        });
+        ws['!cols'] = colWidths;
+
+        // Ajouter la feuille au classeur
+        XLSX.utils.book_append_sheet(wb, ws, 'Livrets de Méditation');
+
+        // Générer le nom de fichier avec la date
+        const fileName = `livrets_meditation_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+        // Télécharger le fichier
+        XLSX.writeFile(wb, fileName);
+
+        alert(`📊 Export Excel réussi ! Fichier téléchargé : ${fileName}`);
+
+      } catch (error) {
+        console.error('Erreur lors de l\'export Excel:', error);
+        alert('Erreur lors de l\'export Excel: ' + error.message);
+      }
+    };
+
     const exportIdeas = async () => {
       try {
         const { data: ideasData } = await supabase.from('ideas').select('*');
@@ -1965,7 +2063,24 @@ const YouthRetreatIdeasApp = () => {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">📋 Livrets par participant</h3>
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-lg font-semibold text-gray-800">📋 Livrets par participant</h3>
+                      
+                      <div className="flex space-x-3">
+                        <button
+                          onClick={exportMeditationToExcel}
+                          className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                          title="Exporter en Excel"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>Export Excel</span>
+                        </button>
+                        
+                        <div className="text-sm text-gray-500 flex items-center">
+                          📊 {meditationResponses.length} livret(s) à exporter
+                        </div>
+                      </div>
+                    </div>
                     
                     {meditationResponses.map((response, index) => (
                       <div key={index} className="border border-gray-200 rounded-xl overflow-hidden">
@@ -2153,26 +2268,39 @@ const YouthRetreatIdeasApp = () => {
                       <span className="text-blue-800 font-semibold text-lg">Export & Sauvegarde</span>
                     </div>
                     <p className="text-blue-700 mb-4">
-                      Exportez les données au format JSON pour une sauvegarde externe.
+                      Exportez les données dans différents formats selon vos besoins.
                     </p>
-                    <p className="text-blue-600 text-sm">
-                      Les images et vidéos restent dans le cloud Supabase.
-                    </p>
+                    <div className="space-y-2 text-blue-600 text-sm">
+                      <div>• <strong>JSON</strong> : Export complet de toutes les données</div>
+                      <div>• <strong>Excel</strong> : Livrets de méditation formatés pour analyse</div>
+                      <div>• Images et vidéos restent dans le cloud Supabase</div>
+                    </div>
                   </div>
                 </div>
 
                 <div className="space-y-6">
                   <h3 className="text-lg font-semibold text-gray-800">Actions de gestion</h3>
                   
-                  <div className="grid md:grid-cols-3 gap-4">
+                  <div className="grid md:grid-cols-4 gap-4">
                     <button
                       onClick={exportIdeas}
                       className="flex flex-col items-center justify-center space-y-3 bg-blue-600 text-white p-6 rounded-xl hover:bg-blue-700 transition-colors"
                     >
                       <Download className="w-8 h-8" />
                       <div className="text-center">
-                        <div className="font-semibold">Exporter les données</div>
-                        <div className="text-blue-200 text-sm">Format JSON</div>
+                        <div className="font-semibold">Exporter JSON</div>
+                        <div className="text-blue-200 text-sm">Toutes les données</div>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={exportMeditationToExcel}
+                      className="flex flex-col items-center justify-center space-y-3 bg-green-600 text-white p-6 rounded-xl hover:bg-green-700 transition-colors"
+                    >
+                      <span className="text-2xl">📊</span>
+                      <div className="text-center">
+                        <div className="font-semibold">Export Excel</div>
+                        <div className="text-green-200 text-sm">Livrets méditation</div>
                       </div>
                     </button>
                     
@@ -2218,6 +2346,7 @@ const YouthRetreatIdeasApp = () => {
                             <div>• Vidéos : bucket 'images' dans dossier 'videos/'</div>
                             <div>• URLs sauvegardées en base de données</div>
                             <div>• Livrets de méditation : table 'meditation_responses'</div>
+                            <div>• Export Excel disponible pour analyse des livrets</div>
                           </div>
                         </div>
                       </div>
